@@ -1,0 +1,105 @@
+{
+  "start": {
+    "money": 120,
+    "products": 8,
+    "dayLengthSeconds": 180,
+    "customerSpawnSeconds": 5,
+    "offlineEfficiency": 0.35,
+    "unlockedZones": ["starter", "stationery-starter"],
+    "prestigeRevenueRequired": 25000
+  },
+  "player": {
+    "speed": 220,
+    "carryCapacity": 8,
+    "stockAmount": 4,
+    "checkoutSeconds": 1.1
+  },
+  "products": {
+    "buyCost": 4,
+    "boxSize": 12,
+    "types": {
+      "groceries": { "name": "Бакалея", "buyPrice": 3, "sellPrice": 9, "color": "0x55c933" },
+      "dairy": { "name": "Молоко", "buyPrice": 4, "sellPrice": 12, "color": "0x58aeea" },
+      "snacks": { "name": "Снеки", "buyPrice": 8, "sellPrice": 24, "color": "0xff7924" },
+      "drinks": { "name": "Напитки", "buyPrice": 13, "sellPrice": 39, "color": "0xffcd37" },
+      "bakery": { "name": "Выпечка", "buyPrice": 19, "sellPrice": 57, "color": "0x82dff2" },
+      "frozen": { "name": "Заморозка", "buyPrice": 28, "sellPrice": 84, "color": "0xdbdbdb" }
+      ,
+      "notebooks": { "name": "\u0422\u0435\u0442\u0440\u0430\u0434\u0438", "shortName": "\u0422\u0435\u0442\u0440.", "buyPrice": 3, "sellPrice": 9, "color": "0x5bc94c" },
+      "writing": { "name": "\u0420\u0443\u0447\u043a\u0438 \u0438 \u043a\u0430\u0440\u0430\u043d\u0434\u0430\u0448\u0438", "shortName": "\u0420\u0443\u0447\u043a\u0438", "buyPrice": 4, "sellPrice": 12, "color": "0x45aaf2" },
+      "markers": { "name": "\u041c\u0430\u0440\u043a\u0435\u0440\u044b", "shortName": "\u041c\u0430\u0440\u043a.", "buyPrice": 6, "sellPrice": 18, "color": "0xf06595" },
+      "paper": { "name": "\u0411\u0443\u043c\u0430\u0433\u0430 \u0438 \u0441\u0442\u0438\u043a\u0435\u0440\u044b", "shortName": "\u0411\u0443\u043c\u0430\u0433\u0430", "buyPrice": 7, "sellPrice": 21, "color": "0xf7d05b" },
+      "folders": { "name": "\u041f\u0430\u043f\u043a\u0438 \u0438 \u0444\u0430\u0439\u043b\u044b", "shortName": "\u041f\u0430\u043f\u043a\u0438", "buyPrice": 10, "sellPrice": 30, "color": "0x6c8cff" },
+      "school": { "name": "\u0422\u043e\u0432\u0430\u0440\u044b \u0434\u043b\u044f \u0448\u043a\u043e\u043b\u044b", "shortName": "\u0428\u043a\u043e\u043b\u0430", "buyPrice": 12, "sellPrice": 36, "color": "0xff922b" },
+      "art": { "name": "\u0425\u0443\u0434\u043e\u0436\u0435\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0435 \u0442\u043e\u0432\u0430\u0440\u044b", "shortName": "\u0410\u0440\u0442", "buyPrice": 15, "sellPrice": 45, "color": "0xcc5de8" },
+      "desk": { "name": "\u0410\u043a\u0441\u0435\u0441\u0441\u0443\u0430\u0440\u044b \u0434\u043b\u044f \u0441\u0442\u043e\u043b\u0430", "shortName": "\u0421\u0442\u043e\u043b", "buyPrice": 18, "sellPrice": 54, "color": "0x20c997" },
+      "envelopes": { "name": "\u041a\u043e\u043d\u0432\u0435\u0440\u0442\u044b \u0438 \u0443\u043f\u0430\u043a\u043e\u0432\u043a\u0430", "shortName": "\u041a\u043e\u043d\u0432.", "buyPrice": 20, "sellPrice": 60, "color": "0xd8a15f" }
+    }
+  },
+  "shelves": [
+    { "id": "groceries-a", "product": "groceries", "x": 440, "y": 290, "capacity": 18, "zone": "starter" },
+    { "id": "groceries-b", "product": "groceries", "x": 610, "y": 290, "capacity": 18, "zone": "starter" },
+    { "id": "dairy-a", "product": "dairy", "x": 440, "y": 430, "capacity": 20, "zone": "dairy" },
+    { "id": "dairy-b", "product": "dairy", "x": 610, "y": 430, "capacity": 20, "zone": "dairy" },
+    { "id": "snacks-a", "product": "snacks", "x": 810, "y": 290, "capacity": 22, "zone": "snacks" },
+    { "id": "snacks-b", "product": "snacks", "x": 980, "y": 290, "capacity": 22, "zone": "snacks" },
+    { "id": "drinks-a", "product": "drinks", "x": 810, "y": 430, "capacity": 24, "zone": "drinks" },
+    { "id": "drinks-b", "product": "drinks", "x": 980, "y": 430, "capacity": 24, "zone": "drinks" },
+    { "id": "bakery-a", "product": "bakery", "x": 440, "y": 570, "capacity": 26, "zone": "bakery" },
+    { "id": "bakery-b", "product": "bakery", "x": 610, "y": 570, "capacity": 26, "zone": "bakery" },
+    { "id": "frozen-a", "product": "frozen", "x": 810, "y": 570, "capacity": 28, "zone": "frozen" },
+    { "id": "frozen-b", "product": "frozen", "x": 980, "y": 570, "capacity": 28, "zone": "frozen" }
+  ],
+  "stationeryShelves": [
+    { "id": "stationery-notebooks-a", "product": "notebooks", "asset": "stationery-notebooks-a", "x": 430, "y": 240, "capacity": 18, "zone": "stationery-starter" },
+    { "id": "stationery-notebooks-b", "product": "notebooks", "asset": "stationery-notebooks-b", "x": 555, "y": 240, "capacity": 20, "zone": "stationery-starter" },
+    { "id": "stationery-writing-a", "product": "writing", "asset": "stationery-writing-a", "x": 705, "y": 240, "capacity": 24, "zone": "stationery-writing" },
+    { "id": "stationery-writing-b", "product": "writing", "asset": "stationery-writing-b", "x": 830, "y": 240, "capacity": 20, "zone": "stationery-writing" },
+    { "id": "stationery-markers-a", "product": "markers", "asset": "stationery-markers-a", "x": 980, "y": 240, "capacity": 24, "zone": "stationery-markers" },
+    { "id": "stationery-markers-b", "product": "markers", "asset": "stationery-markers-b", "x": 1105, "y": 240, "capacity": 24, "zone": "stationery-markers" },
+    { "id": "stationery-paper-a", "product": "paper", "asset": "stationery-paper-a", "x": 430, "y": 400, "capacity": 24, "zone": "stationery-paper" },
+    { "id": "stationery-paper-b", "product": "paper", "asset": "stationery-paper-b", "x": 555, "y": 400, "capacity": 20, "zone": "stationery-paper" },
+    { "id": "stationery-folders-a", "product": "folders", "asset": "stationery-folders-a", "x": 705, "y": 400, "capacity": 22, "zone": "stationery-folders" },
+    { "id": "stationery-folders-b", "product": "folders", "asset": "stationery-folders-b", "x": 830, "y": 400, "capacity": 20, "zone": "stationery-folders" },
+    { "id": "stationery-school-a", "product": "school", "asset": "stationery-school-a", "x": 980, "y": 400, "capacity": 20, "zone": "stationery-school" },
+    { "id": "stationery-school-b", "product": "school", "asset": "stationery-school-b", "x": 1105, "y": 400, "capacity": 18, "zone": "stationery-school" },
+    { "id": "stationery-art-a", "product": "art", "asset": "stationery-art-a", "x": 430, "y": 560, "capacity": 20, "zone": "stationery-art" },
+    { "id": "stationery-art-b", "product": "art", "asset": "stationery-art-b", "x": 555, "y": 560, "capacity": 24, "zone": "stationery-art" },
+    { "id": "stationery-desk-a", "product": "desk", "asset": "stationery-desk-a", "x": 705, "y": 560, "capacity": 20, "zone": "stationery-desk" },
+    { "id": "stationery-desk-b", "product": "desk", "asset": "stationery-desk-b", "x": 830, "y": 560, "capacity": 20, "zone": "stationery-desk" },
+    { "id": "stationery-envelopes-a", "product": "envelopes", "asset": "stationery-envelopes-a", "x": 980, "y": 560, "capacity": 24, "zone": "stationery-envelopes" },
+    { "id": "stationery-envelopes-b", "product": "envelopes", "asset": "stationery-envelopes-b", "x": 1105, "y": 560, "capacity": 18, "zone": "stationery-envelopes" }
+  ],
+  "stationeryZones": [
+    { "id": "stationery-starter", "name": "\u0422\u0435\u0442\u0440\u0430\u0434\u0438", "cost": 0, "rect": { "x": 365, "y": 160, "w": 250, "h": 140 } },
+    { "id": "stationery-writing", "name": "\u0420\u0443\u0447\u043a\u0438 \u0438 \u043a\u0430\u0440\u0430\u043d\u0434\u0430\u0448\u0438", "cost": 360, "rect": { "x": 640, "y": 160, "w": 250, "h": 140 } },
+    { "id": "stationery-markers", "name": "\u041c\u0430\u0440\u043a\u0435\u0440\u044b", "cost": 760, "rect": { "x": 915, "y": 160, "w": 250, "h": 140 } },
+    { "id": "stationery-paper", "name": "\u0411\u0443\u043c\u0430\u0433\u0430 \u0438 \u0441\u0442\u0438\u043a\u0435\u0440\u044b", "cost": 1120, "rect": { "x": 365, "y": 320, "w": 250, "h": 140 } },
+    { "id": "stationery-folders", "name": "\u041f\u0430\u043f\u043a\u0438 \u0438 \u0444\u0430\u0439\u043b\u044b", "cost": 1550, "rect": { "x": 640, "y": 320, "w": 250, "h": 140 } },
+    { "id": "stationery-school", "name": "\u0422\u043e\u0432\u0430\u0440\u044b \u0434\u043b\u044f \u0448\u043a\u043e\u043b\u044b", "cost": 1980, "rect": { "x": 915, "y": 320, "w": 250, "h": 140 } },
+    { "id": "stationery-art", "name": "\u0425\u0443\u0434\u043e\u0436\u0435\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0435 \u0442\u043e\u0432\u0430\u0440\u044b", "cost": 2500, "rect": { "x": 365, "y": 480, "w": 250, "h": 140 } },
+    { "id": "stationery-desk", "name": "\u0410\u043a\u0441\u0435\u0441\u0441\u0443\u0430\u0440\u044b \u0434\u043b\u044f \u0441\u0442\u043e\u043b\u0430", "cost": 3100, "rect": { "x": 640, "y": 480, "w": 250, "h": 140 } },
+    { "id": "stationery-envelopes", "name": "\u041a\u043e\u043d\u0432\u0435\u0440\u0442\u044b \u0438 \u0443\u043f\u0430\u043a\u043e\u0432\u043a\u0430", "cost": 3800, "rect": { "x": 915, "y": 480, "w": 250, "h": 140 } }
+  ],
+  "zones": [
+    { "id": "starter", "name": "Бакалея", "cost": 0, "rect": { "x": 330, "y": 220, "w": 370, "h": 130 } },
+    { "id": "dairy", "name": "Молочный ряд", "cost": 380, "rect": { "x": 330, "y": 360, "w": 370, "h": 130 } },
+    { "id": "snacks", "name": "Снеки", "cost": 760, "rect": { "x": 700, "y": 220, "w": 370, "h": 130 } },
+    { "id": "drinks", "name": "Напитки", "cost": 1250, "rect": { "x": 700, "y": 360, "w": 370, "h": 130 } },
+    { "id": "bakery", "name": "Пекарня", "cost": 1900, "rect": { "x": 330, "y": 500, "w": 370, "h": 130 } },
+    { "id": "frozen", "name": "Заморозка", "cost": 2800, "rect": { "x": 700, "y": 500, "w": 370, "h": 130 } }
+  ],
+  "upgrades": [
+    { "id": "speed-1", "name": "Быстрые кроссовки", "cost": 180, "type": "playerSpeed", "value": 35 },
+    { "id": "capacity-1", "name": "Большая тележка", "cost": 260, "type": "carryCapacity", "value": 6 },
+    { "id": "checkout-1", "name": "Быстрый self-checkout", "cost": 420, "type": "checkoutSpeed", "value": 0.25 },
+    { "id": "profit-1", "name": "Красивые ценники", "cost": 720, "type": "sellPrice", "value": 3 }
+  ],
+  "dailyRewards": [100, 150, 225, 300, 450, 600, 900],
+  "ads": {
+    "rewardedMoneyStart": 200,
+    "rewardedMoneyStep": 200,
+    "rewardedMoneyMax": 1000,
+    "fullscreenEveryDays": 2
+  }
+}
