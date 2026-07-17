@@ -13,6 +13,7 @@ import { BoostSystem } from '../systems/BoostSystem.js';
 import { TeleportSystem } from '../systems/TeleportSystem.js';
 import { EventBus, Events } from '../core/EventBus.js';
 import { STATIONERY_LAYOUT } from '../config/StationeryLayout.js';
+import { WaypointGraph } from '../navigation/WaypointGraph.js';
 
 export class StationeryStoreScene extends Phaser.Scene {
   constructor() {
@@ -40,8 +41,11 @@ export class StationeryStoreScene extends Phaser.Scene {
       progressHeight: this.layout.shelf.progressHeight,
       progressY: this.layout.shelf.progressY,
       progressStyle: 'compact',
-      showLockedVisuals: true,
-      lockedVisualAlpha: 0.46,
+      embeddedProgressCropTop: this.layout.shelf.contentCropTops,
+      shelfImageRepairs: this.layout.shelf.imageRepairs,
+      preserveShelfAspect: true,
+      shelfImageY: 8,
+      shelfImageHeight: 98,
       blockerWidth: this.layout.shelf.blockerWidth,
       blockerHeight: this.layout.shelf.blockerHeight,
       blockerY: this.layout.shelf.blockerY,
@@ -53,12 +57,15 @@ export class StationeryStoreScene extends Phaser.Scene {
         columns: this.layout.aisles.columns,
         switches: this.layout.aisles.switches,
         entranceThreshold: 30,
+        entranceWaypoints: [this.layout.entranceWaypoint, this.layout.entranceRoadWaypoint],
+        lowestRoadY: this.layout.aisles.rowYs[2],
       },
     });
     this.checkout = new CheckoutSystem(this, this.state, this.economy, {
       imageKey: 'stationery-checkout',
       displayWidth: this.layout.checkout.displayWidth,
       displayHeight: this.layout.checkout.displayHeight,
+      textureCrop: this.layout.checkout.textureCrop,
       terminalPositions: this.layout.checkout.terminalPositions,
       terminalSpots: this.layout.checkout.terminalSpots,
       sideLaneX: this.layout.checkout.sideLaneX,
@@ -66,7 +73,12 @@ export class StationeryStoreScene extends Phaser.Scene {
       waitingStepY: this.layout.checkout.waitingStepY,
       laneMinY: this.layout.aisles.rowYs[0],
       laneMaxY: this.layout.entrance.y,
-      entrancePoint: this.layout.entrance,
+      entrancePoint: this.layout.entranceWaypoint,
+      exitRoute: [
+        this.layout.entranceRoadWaypoint,
+        this.layout.entranceWaypoint,
+        this.layout.customerSpawn,
+      ],
     });
     this.player = new Player(this, this.layout.playerSpawn.x, this.layout.playerSpawn.y, this.economy.stats);
     this.physics.add.collider(this.player.sprite, this.shelves.obstacles);
@@ -96,10 +108,10 @@ export class StationeryStoreScene extends Phaser.Scene {
       boosts: this.boosts,
       environmentObstacles: this.environmentObstacles,
     };
-    this.customers = new CustomerSystem(this, this.balance, this.systems, {
-      spawnPoint: this.layout.entrance,
-    });
-    this.systems.customers = this.customers;
+    this.systems.refreshNavigation = () => {
+      this.rebuildStationeryNavigation();
+      return this.validateStationeryNavigation();
+    };
     this.zones = new ZoneSystem(this, this.state, this.balance, this.economy, this.shelves, {
       zonesPath: 'stationeryZones',
       rects: this.layout.zones.rects,
@@ -115,19 +127,30 @@ export class StationeryStoreScene extends Phaser.Scene {
         strokeWidth: 1,
       },
     });
-    this.drawCustomerRoads();
     this.createDepartmentSigns();
-    this.onRoutesChanged = () => this.drawCustomerRoads();
+    this.restock = new RestockSystem(this.state, this.balance, this.economy, this.shelves, this.zones, {
+      zonesPath: 'stationeryZones',
+    });
+    this.rebuildStationeryNavigation();
+    this.customers = new CustomerSystem(this, this.balance, this.systems, {
+      spawnPoint: this.layout.customerSpawn,
+      spawnEnabled: false,
+      autoRefreshRoutes: false,
+      minSpawnDistance: 34,
+    });
+    this.systems.customers = this.customers;
+    this.customers.setSpawnEnabled(this.validateStationeryNavigation());
+    this.onRoutesChanged = () => {
+      this.rebuildStationeryNavigation();
+      this.customers.setSpawnEnabled(this.validateStationeryNavigation());
+      this.customers.refreshActiveRoutes();
+    };
     this.onPanelToggled = ({ open }) => {
       this.panelOpen = open;
       this.reflowStationeryLayout();
     };
     EventBus.on(Events.ROUTES_CHANGED, this.onRoutesChanged);
     EventBus.on(Events.UI_PANEL_TOGGLED, this.onPanelToggled);
-    this.restock = new RestockSystem(this.state, this.balance, this.economy, this.shelves, this.zones, {
-      zonesPath: 'stationeryZones',
-    });
-
     this.scale.on('resize', this.reflowStationeryLayout, this);
     this.reflowStationeryLayout();
     this.scene.launch('UIScene', {
@@ -169,6 +192,12 @@ export class StationeryStoreScene extends Phaser.Scene {
     this.cameras.main.setBounds(world.x, world.y, world.width, world.height);
     this.cameras.main.setScroll(0, 0);
     this.cameras.main.setBackgroundColor('#d9e1d3');
+    if (this.shelves && this.checkout) {
+      this.rebuildStationeryNavigation();
+      const navigationReady = this.validateStationeryNavigation();
+      this.customers?.setSpawnEnabled(navigationReady);
+      this.customers?.refreshActiveRoutes();
+    }
   }
 
   drawWorld() {
@@ -200,18 +229,7 @@ export class StationeryStoreScene extends Phaser.Scene {
 
     this.drawWallFrames();
     this.drawDecorations();
-    this.add.image(entrance.x, entrance.y, 'stationery-entrance')
-      .setDisplaySize(entrance.width, entrance.height)
-      .setDepth(entrance.y + 24);
-    this.add.rectangle(entrance.x, entrance.y + 6, 144, 34, 0x26352f, 0.95)
-      .setStrokeStyle(2, 0x70857a, 1)
-      .setDepth(entrance.y + 25);
-    this.add.text(entrance.x, entrance.y + 5, 'ВХОД / ВЫХОД', {
-      fontSize: '15px', color: '#f4ead0', fontStyle: 'bold', stroke: '#121a17', strokeThickness: 2,
-    }).setOrigin(0.5).setDepth(entrance.y + 26);
-
-    this.addEntranceBlocker(entrance.x - 99, entrance.y + 1, 13, 50);
-    this.addEntranceBlocker(entrance.x + 99, entrance.y + 1, 13, 50);
+    this.drawEntrance(entrance);
   }
 
   drawWallFrames() {
@@ -265,6 +283,54 @@ export class StationeryStoreScene extends Phaser.Scene {
     });
     leaves.fillStyle(0x76a84e, 0.85).fillEllipse(-5, -12, 8, 18);
     plant.add([shadow, pot, leaves]);
+    return plant;
+  }
+
+  drawEntrance(entrance) {
+    const platform = this.add.graphics().setDepth(0.6);
+    platform.fillStyle(0xd7ddd5, 1).fillRoundedRect(entrance.x - 146, entrance.y - 48, 292, 92, 5);
+    platform.lineStyle(2, 0x87948d, 0.85).strokeRoundedRect(entrance.x - 146, entrance.y - 48, 292, 92, 5);
+    platform.fillStyle(0x7e8983, 1).fillRect(entrance.x - 146, entrance.y + 38, 292, 8);
+
+    const texture = this.textures.get('stationery-entrance');
+    const frameName = 'stationery-entrance-core';
+    if (!texture.frames[frameName]) texture.add(frameName, 0, 194, 20, 354, 170);
+    this.add.image(entrance.x, entrance.y, 'stationery-entrance', frameName)
+      .setDisplaySize(entrance.width, entrance.height)
+      .setDepth(2);
+
+    const barriers = this.add.graphics().setDepth(entrance.y + 20);
+    barriers.fillStyle(0x303735, 1);
+    barriers.fillRoundedRect(entrance.x - 130, entrance.y - 15, 17, 58, 4);
+    barriers.fillRoundedRect(entrance.x + 113, entrance.y - 15, 17, 58, 4);
+    barriers.lineStyle(2, 0x161b1a, 1);
+    barriers.strokeRoundedRect(entrance.x - 130, entrance.y - 15, 17, 58, 4);
+    barriers.strokeRoundedRect(entrance.x + 113, entrance.y - 15, 17, 58, 4);
+    barriers.fillStyle(0x65716c, 0.9);
+    barriers.fillRect(entrance.x - 126, entrance.y - 10, 4, 43);
+    barriers.fillRect(entrance.x + 118, entrance.y - 10, 4, 43);
+
+    this.add.rectangle(entrance.x, entrance.y + 38, 156, 24, 0x26352f, 0.97)
+      .setStrokeStyle(2, 0x70857a, 1)
+      .setDepth(entrance.y + 28);
+    this.add.text(entrance.x, entrance.y + 38, 'ВХОД / ВЫХОД', {
+      fontSize: '13px', color: '#f4ead0', fontStyle: 'bold', stroke: '#121a17', strokeThickness: 2,
+    }).setOrigin(0.5).setDepth(entrance.y + 29);
+
+    this.drawPlant(entrance.x - 147, entrance.y + 12, 0.62);
+    this.drawPlant(entrance.x + 147, entrance.y + 12, 0.62);
+    this.addEnvironmentBlocker(entrance.x - 122, entrance.y + 14, 17, 42);
+    this.addEnvironmentBlocker(entrance.x + 122, entrance.y + 14, 17, 42);
+    this.addEnvironmentBlocker(entrance.x - 147, entrance.y + 24, 26, 24);
+    this.addEnvironmentBlocker(entrance.x + 147, entrance.y + 24, 26, 24);
+  }
+
+  addEnvironmentBlocker(x, y, width, height) {
+    const blocker = this.add.rectangle(x, y, width, height, 0x000000, 0);
+    this.environmentObstacles.add(blocker);
+    blocker.body.setSize(width, height);
+    blocker.body.updateFromGameObject();
+    return blocker;
   }
 
   createDepartmentSigns() {
@@ -279,35 +345,29 @@ export class StationeryStoreScene extends Phaser.Scene {
     });
   }
 
-  addEntranceBlocker(x, y, width, height) {
-    const blocker = this.add.rectangle(x, y, width, height, 0x000000, 0);
-    this.environmentObstacles.add(blocker);
-    blocker.body.setSize(width, height);
-    blocker.body.updateFromGameObject();
-    return blocker;
-  }
-
   drawCustomerRoads() {
     this.customerRoadGraphics?.forEach((graphic) => graphic.destroy());
-    const { aisles, checkout, entrance } = this.layout;
+    const { aisles, checkout, entranceWaypoint, entranceRoadWaypoint, customerSpawn } = this.layout;
     const roadGraphics = this.add.graphics().setDepth(1);
     const markGraphics = this.add.graphics().setDepth(1.1);
     this.customerRoadGraphics = [roadGraphics, markGraphics];
     const activeConnectors = aisles.connectorXs.map((x) => this.getActiveStationeryConnectorX(x));
     const roadSegments = [
       ...aisles.rowYs.map((y) => ({ x1: aisles.sideX, y1: y, x2: aisles.endX, y2: y })),
-      { x1: aisles.sideX, y1: aisles.rowYs[0], x2: aisles.sideX, y2: entrance.y },
+      { x1: aisles.sideX, y1: aisles.rowYs[0], x2: aisles.sideX, y2: aisles.rowYs[2] },
       { x1: activeConnectors[1], y1: aisles.rowYs[0], x2: activeConnectors[1], y2: aisles.rowYs[2] },
       { x1: activeConnectors[2], y1: aisles.rowYs[0], x2: activeConnectors[2], y2: aisles.rowYs[2] },
-      { x1: aisles.sideX, y1: entrance.y, x2: entrance.x, y2: entrance.y },
+      { x1: entranceRoadWaypoint.x, y1: entranceRoadWaypoint.y, x2: entranceWaypoint.x, y2: entranceWaypoint.y },
+      { x1: entranceWaypoint.x, y1: entranceWaypoint.y, x2: customerSpawn.x, y2: customerSpawn.y },
       ...checkout.terminalSpots.map((spot) => ({ x1: spot.x, y1: spot.y, x2: aisles.sideX, y2: spot.y })),
     ];
     const joints = [
       ...aisles.rowYs.flatMap((y) => activeConnectors.map((x) => ({ x, y }))),
       ...aisles.rowYs.map((y) => ({ x: aisles.endX, y })),
       ...checkout.terminalSpots.map((spot) => ({ x: aisles.sideX, y: spot.y })),
-      { x: aisles.sideX, y: entrance.y },
-      entrance,
+      entranceRoadWaypoint,
+      entranceWaypoint,
+      customerSpawn,
     ];
 
     const drawNetwork = (width, color, alpha) => {
@@ -348,10 +408,113 @@ export class StationeryStoreScene extends Phaser.Scene {
     const routeSwitch = this.layout.aisles.switches.find((item) => (
       item.originalConnectorX === connectorX && item.blockingShelfIds.some((id) => {
         const shelf = this.shelves?.getShelf(id);
-        return shelf && this.state.unlockedZones.includes(shelf.zone);
+        return this.shelves.isShelfActive(shelf);
       })
     ));
     return routeSwitch?.detourConnectorX ?? connectorX;
+  }
+
+  rebuildStationeryNavigation() {
+    if (!this.shelves || !this.checkout || !this.systems) return;
+    this.drawCustomerRoads();
+    const { aisles, checkout, entranceWaypoint, entranceRoadWaypoint, customerSpawn } = this.layout;
+    const graph = new WaypointGraph();
+    graph.addNode('spawn', customerSpawn.x, customerSpawn.y, 'spawn');
+    graph.addNode('entrance', entranceWaypoint.x, entranceWaypoint.y, 'entrance');
+    graph.addNode('entrance-road', entranceRoadWaypoint.x, entranceRoadWaypoint.y, 'road');
+    graph.connect('spawn', 'entrance');
+    graph.connect('entrance', 'entrance-road');
+
+    const sideYs = [...new Set([
+      ...aisles.rowYs,
+      ...checkout.terminalSpots.map((spot) => spot.y),
+      checkout.waitingStartY,
+    ])].sort((a, b) => a - b);
+    sideYs.forEach((y) => graph.addNode(`side:${y}`, aisles.sideX, y));
+    sideYs.slice(1).forEach((y, index) => graph.connect(`side:${sideYs[index]}`, `side:${y}`));
+
+    const activeConnectors = aisles.connectorXs.map((x) => this.getActiveStationeryConnectorX(x));
+    aisles.rowYs.forEach((y, rowIndex) => {
+      const shelfXs = this.shelves.shelves
+        .filter((shelf) => this.shelves.isShelfActive(shelf) && shelf.customerSpot?.y === y)
+        .map((shelf) => shelf.customerSpot.x);
+      const entranceXs = y === entranceRoadWaypoint.y ? [entranceRoadWaypoint.x] : [];
+      const rowXs = [...new Set([aisles.sideX, ...activeConnectors, aisles.endX, ...shelfXs, ...entranceXs])].sort((a, b) => a - b);
+      rowXs.forEach((x) => graph.addNode(`row:${rowIndex}:${x}`, x, y));
+      rowXs.slice(1).forEach((x, index) => graph.connect(`row:${rowIndex}:${rowXs[index]}`, `row:${rowIndex}:${x}`));
+      graph.connect(`side:${y}`, `row:${rowIndex}:${aisles.sideX}`);
+      if (y === entranceRoadWaypoint.y) graph.connect('entrance-road', `row:${rowIndex}:${entranceRoadWaypoint.x}`);
+    });
+
+    activeConnectors.slice(1).forEach((x) => {
+      aisles.rowYs.slice(1).forEach((_y, rowIndex) => {
+        graph.connect(`row:${rowIndex}:${x}`, `row:${rowIndex + 1}:${x}`);
+      });
+    });
+
+    this.shelves.shelves.filter((shelf) => this.shelves.isShelfActive(shelf)).forEach((shelf) => {
+      const rowIndex = aisles.rowYs.indexOf(shelf.customerSpot.y);
+      const serviceId = `shelf:${shelf.id}`;
+      graph.addNode(serviceId, shelf.customerSpot.x, shelf.customerSpot.y, 'service');
+      graph.connect(serviceId, `row:${rowIndex}:${shelf.customerSpot.x}`);
+      shelf.navigationNodeId = serviceId;
+    });
+
+    checkout.terminalSpots.forEach((spot, index) => {
+      const checkoutId = `checkout:${index}`;
+      graph.addNode(checkoutId, spot.x, spot.y, 'checkout');
+      graph.connect(checkoutId, `side:${spot.y}`);
+    });
+
+    this.navigationGraph = graph;
+    this.systems.navigationGraph = graph;
+    this.drawNavigationDebug();
+  }
+
+  validateStationeryNavigation() {
+    if (!this.navigationGraph) return false;
+    const issues = [];
+    this.shelves.shelves.filter((shelf) => this.shelves.isShelfActive(shelf)).forEach((shelf) => {
+      const serviceId = `shelf:${shelf.id}`;
+      if (!this.navigationGraph.hasPath('entrance', serviceId)) issues.push(`${shelf.id}:entrance`);
+      if (!this.navigationGraph.hasPath(serviceId, 'checkout:0')) issues.push(`${shelf.id}:checkout`);
+    });
+    if (!this.navigationGraph.hasPath('checkout:0', 'entrance')) issues.push('checkout:exit');
+    this.navigationIssues = issues;
+    return issues.length === 0;
+  }
+
+  drawNavigationDebug() {
+    this.navigationDebugGraphics?.destroy();
+    this.navigationDebugGraphics = null;
+    if (!this.layout.debugNavigation || !this.navigationGraph) return;
+    const graphics = this.add.graphics().setDepth(5000);
+    graphics.lineStyle(2, 0x35d07f, 0.9);
+    this.navigationGraph.getConnections().forEach(([from, to]) => graphics.lineBetween(from.x, from.y, to.x, to.y));
+    graphics.lineStyle(2, 0xee5a63, 0.9);
+    this.layout.aisles.switches.filter((routeSwitch) => (
+      this.shelves.isRouteSwitchActive(routeSwitch)
+    )).forEach((routeSwitch) => {
+      graphics.lineBetween(
+        routeSwitch.originalConnectorX,
+        this.layout.aisles.rowYs[0],
+        routeSwitch.originalConnectorX,
+        this.layout.aisles.rowYs[2],
+      );
+    });
+    this.shelves.shelves.filter((shelf) => this.shelves.isShelfActive(shelf)).forEach((shelf) => {
+      graphics.strokeRect(
+        shelf.x - this.layout.shelf.blockerWidth / 2,
+        shelf.y + this.layout.shelf.blockerY - this.layout.shelf.blockerHeight / 2,
+        this.layout.shelf.blockerWidth,
+        this.layout.shelf.blockerHeight,
+      );
+    });
+    this.navigationGraph.nodes.forEach((node) => {
+      const color = node.kind === 'spawn' ? 0x3da5ff : node.kind === 'service' ? 0xffd65a : 0x35d07f;
+      graphics.fillStyle(color, 1).fillCircle(node.x, node.y, 4);
+    });
+    this.navigationDebugGraphics = graphics;
   }
 
   update(_time, delta) {

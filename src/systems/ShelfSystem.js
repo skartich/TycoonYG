@@ -33,8 +33,11 @@ export class ShelfSystem {
       progressHeight: DEFAULT_PROGRESS_HEIGHT,
       progressY: DEFAULT_PROGRESS_Y,
       progressStyle: 'image',
-      showLockedVisuals: false,
-      lockedVisualAlpha: 0.42,
+      embeddedProgressCropTop: 0,
+      shelfImageRepairs: null,
+      preserveShelfAspect: false,
+      shelfImageY: 0,
+      shelfImageHeight: null,
       positions: null,
       blockerWidth: DEFAULT_SHELF_BLOCKER_WIDTH,
       blockerHeight: DEFAULT_SHELF_BLOCKER_HEIGHT,
@@ -47,6 +50,9 @@ export class ShelfSystem {
         columns: null,
         switches: [],
         entranceThreshold: 80,
+        entranceWaypoint: null,
+        entranceWaypoints: null,
+        lowestRoadY: null,
       },
       ...options,
       route: {
@@ -56,6 +62,9 @@ export class ShelfSystem {
         columns: null,
         switches: [],
         entranceThreshold: 80,
+        entranceWaypoint: null,
+        entranceWaypoints: null,
+        lowestRoadY: null,
         ...(options.route ?? {}),
       },
     };
@@ -71,6 +80,7 @@ export class ShelfSystem {
       progressText: null,
       selectedGlow: null,
     }));
+    this.shelfIndicators = new Map();
     this.createVisuals();
     this.stockWasAvailable = this.hasAnyStock();
     this.onShelfSelected = (id) => this.setSelectedShelf(id);
@@ -79,41 +89,91 @@ export class ShelfSystem {
 
   createVisuals() {
     this.obstacles = this.scene.physics.add.staticGroup();
-    this.shelves.forEach((shelf) => {
-      const unlocked = this.state.unlockedZones.includes(shelf.zone);
-      const visual = this.scene.add.container(shelf.x, shelf.y)
-        .setDepth(shelf.y + this.options.shelfHeight / 2)
-        .setVisible(unlocked || this.options.showLockedVisuals)
-        .setAlpha(unlocked ? 1 : this.options.lockedVisualAlpha);
-      const productColor = Number(shelf.productMeta.color);
-      const shelfKey = shelf.asset ?? `shelf-${shelf.product}`;
-      const progressKey = shelf.progressAsset ?? `progress-${shelf.product}`;
-      const selectedGlow = this.scene.add.rectangle(0, 3, this.options.shelfWidth + 10, this.options.shelfHeight + 8, 0x62c6e8, 0.08)
-        .setStrokeStyle(3, 0x62c6e8, 0.9)
-        .setVisible(false);
-      const shelfImage = this.scene.add.image(0, 0, shelfKey).setDisplaySize(this.options.shelfWidth, this.options.shelfHeight);
-      const progressFrame = this.options.progressStyle === 'compact'
-        ? this.createCompactProgressFrame()
-        : this.scene.add.image(0, this.options.progressY, progressKey).setDisplaySize(this.options.progressWidth, this.options.progressHeight);
-      const progressFill = this.scene.add.graphics();
-      const progressText = this.scene.add.text(0, this.options.progressY + (this.options.progressStyle === 'compact' ? -1 : TEXT_Y), '', {
-        fontSize: this.options.progressStyle === 'compact' ? '11px' : '12px',
-        color: '#ffffff',
-        fontStyle: 'bold',
-        stroke: '#111111',
-        strokeThickness: 2,
-        align: 'center',
-      }).setOrigin(0.5);
-      visual.add([selectedGlow, shelfImage, progressFrame, progressFill, progressText]);
-      shelf.progressFill = progressFill;
-      shelf.progressColor = productColor;
-      shelf.progressText = progressText;
-      shelf.selectedGlow = selectedGlow;
-      shelf.visual = visual;
-      shelf.customerSpot = { x: shelf.x, y: shelf.y + this.options.customerSpotY };
-      shelf.blocker = this.createBlocker(shelf, unlocked);
-      this.updateLabel(shelf);
-    });
+    this.shelves.filter((shelf) => this.isShelfPurchased(shelf)).forEach((shelf) => this.activateShelf(shelf));
+  }
+
+  activateShelf(shelf) {
+    if (!shelf || shelf.visual) return shelf?.visual ?? null;
+    const visual = this.scene.add.container(shelf.x, shelf.y)
+      .setDepth(shelf.y + this.options.shelfHeight / 2);
+    const shelfKey = shelf.asset ?? `shelf-${shelf.product}`;
+    const selectedGlow = this.scene.add.rectangle(0, 3, this.options.shelfWidth + 10, this.options.shelfHeight + 8, 0x62c6e8, 0.08)
+      .setStrokeStyle(3, 0x62c6e8, 0.9)
+      .setVisible(false);
+    const shelfImage = this.createShelfImage(shelfKey);
+    const indicator = this.createIndicator(shelf);
+    visual.add([selectedGlow, shelfImage, ...indicator.objects]);
+    shelf.progressFill = indicator.fill;
+    shelf.progressColor = Number(shelf.productMeta.color);
+    shelf.progressText = indicator.text;
+    shelf.selectedGlow = selectedGlow;
+    shelf.visual = visual;
+    shelf.customerSpot = { x: shelf.x, y: shelf.y + this.options.customerSpotY };
+    shelf.blocker = this.createBlocker(shelf);
+    this.shelfIndicators.set(shelf.id, indicator);
+    this.updateLabel(shelf);
+    return visual;
+  }
+
+  createShelfImage(shelfKey) {
+    let frame;
+    const cropConfig = this.options.embeddedProgressCropTop;
+    const cropTop = typeof cropConfig === 'object' ? (cropConfig[shelfKey] ?? 0) : cropConfig;
+    const texture = this.scene.textures.get(shelfKey);
+    const source = texture.getSourceImage();
+    if (cropTop > 0) {
+      const frameName = `shelf-content-${cropTop}`;
+      if (!texture.frames[frameName]) {
+        texture.add(frameName, 0, 0, cropTop, source.width, source.height - cropTop);
+      }
+      frame = frameName;
+    }
+    const contentWidth = source.width;
+    const contentHeight = source.height - cropTop;
+    const targetHeight = this.options.shelfImageHeight ?? this.options.shelfHeight;
+    const scale = this.options.preserveShelfAspect
+      ? Math.min(this.options.shelfWidth / contentWidth, targetHeight / contentHeight)
+      : null;
+    const displayWidth = scale == null ? this.options.shelfWidth : contentWidth * scale;
+    const displayHeight = scale == null ? targetHeight : contentHeight * scale;
+    const artwork = this.scene.add.container(0, this.options.shelfImageY);
+    const repair = this.options.shelfImageRepairs?.[shelfKey];
+    const repairWidth = repair?.mirrorRightEdgeWidth ?? 0;
+    const repairDisplayWidth = repairWidth > 0 ? displayWidth * repairWidth / contentWidth : 0;
+    const image = this.scene.add.image(repairDisplayWidth / 2, 0, shelfKey, frame)
+      .setDisplaySize(displayWidth, displayHeight);
+    artwork.add(image);
+
+    if (repairWidth > 0) {
+      const repairFrame = `shelf-edge-${cropTop}-${repairWidth}`;
+      if (!texture.frames[repairFrame]) {
+        texture.add(repairFrame, 0, source.width - repairWidth, cropTop, repairWidth, contentHeight);
+      }
+      const edge = this.scene.add.image(-displayWidth / 2, 0, shelfKey, repairFrame)
+        .setDisplaySize(repairDisplayWidth, displayHeight)
+        .setFlipX(true);
+      artwork.add(edge);
+    }
+    return artwork;
+  }
+
+  createIndicator(shelf) {
+    const existing = this.shelfIndicators.get(shelf.id);
+    if (existing) return existing;
+    const progressKey = shelf.progressAsset ?? `progress-${shelf.product}`;
+    const frame = this.options.progressStyle === 'compact'
+      ? this.createCompactProgressFrame()
+      : this.scene.add.image(0, this.options.progressY, progressKey).setDisplaySize(this.options.progressWidth, this.options.progressHeight);
+    const fill = this.scene.add.graphics();
+    const text = this.scene.add.text(0, this.options.progressY + (this.options.progressStyle === 'compact' ? -1 : TEXT_Y), '', {
+      fontSize: this.options.progressStyle === 'compact' ? '11px' : '12px',
+      color: '#ffffff',
+      fontStyle: 'bold',
+      stroke: '#111111',
+      strokeThickness: 2,
+      align: 'center',
+    }).setOrigin(0.5);
+    return { objects: [frame, fill, text], frame, fill, text };
   }
 
   createCompactProgressFrame() {
@@ -127,7 +187,7 @@ export class ShelfSystem {
     return frame;
   }
 
-  createBlocker(shelf, unlocked) {
+  createBlocker(shelf) {
     const blocker = this.scene.add.rectangle(
       shelf.x,
       shelf.y + this.options.blockerY,
@@ -139,8 +199,6 @@ export class ShelfSystem {
     this.obstacles.add(blocker);
     blocker.body.setSize(this.options.blockerWidth, this.options.blockerHeight);
     blocker.body.updateFromGameObject();
-    blocker.body.enable = unlocked;
-    blocker.setActive(unlocked);
     return blocker;
   }
 
@@ -211,21 +269,36 @@ export class ShelfSystem {
   }
 
   setSelectedShelf(id) {
-    this.shelves.forEach((shelf) => shelf.selectedGlow?.setVisible(shelf.id === id && shelf.visual.visible));
+    this.shelves.forEach((shelf) => shelf.selectedGlow?.setVisible(shelf.id === id && this.isShelfActive(shelf)));
   }
 
   unlockZone(zoneId) {
     this.shelves.filter((shelf) => shelf.zone === zoneId).forEach((shelf) => {
-      shelf.visual.setVisible(true).setAlpha(1);
-      shelf.blocker.body.enable = true;
-      shelf.blocker.setActive(true);
-      this.updateLabel(shelf);
+      this.activateShelf(shelf);
     });
+  }
+
+  getShelfState(idOrShelf) {
+    const shelf = typeof idOrShelf === 'string' ? this.getShelf(idOrShelf) : idOrShelf;
+    if (!shelf || !this.state.unlockedZones.includes(shelf.zone)) return 'locked';
+    return shelf.visual?.active && shelf.blocker?.body?.enable && shelf.customerSpot ? 'active' : 'purchased';
+  }
+
+  isShelfPurchased(shelf) {
+    return this.getShelfState(shelf) !== 'locked';
+  }
+
+  isShelfActive(shelf) {
+    return this.getShelfState(shelf) === 'active';
+  }
+
+  isShelfReachable(shelf) {
+    return this.isShelfActive(shelf) && Boolean(shelf.customerSpot);
   }
 
   stockShelf(id, amount) {
     const shelf = this.shelves.find((item) => item.id === id);
-    if (!shelf || !this.state.unlockedZones.includes(shelf.zone)) return 0;
+    if (!this.isShelfActive(shelf)) return 0;
     const current = this.state.shelves[id] ?? 0;
     const stocked = Math.min(amount, shelf.capacity - current);
     this.state.shelves[id] = current + stocked;
@@ -244,6 +317,7 @@ export class ShelfSystem {
   }
 
   getRouteToShelf(shelf, from) {
+    if (!this.isShelfReachable(shelf)) return [];
     const spot = this.getCustomerSpot(shelf);
     const route = [];
     let current = { x: from.x, y: from.y };
@@ -251,8 +325,15 @@ export class ShelfSystem {
     const sideAisleX = this.options.route.sideAisleX;
 
     if (from.y > lowestRoadY + this.options.route.entranceThreshold) {
+      const entranceWaypoints = this.options.route.entranceWaypoints
+        ?? (this.options.route.entranceWaypoint ? [this.options.route.entranceWaypoint] : []);
+      entranceWaypoints.forEach((entranceWaypoint) => {
+        if (Math.hypot(current.x - entranceWaypoint.x, current.y - entranceWaypoint.y) <= 1) return;
+        route.push({ ...entranceWaypoint });
+        current = { ...entranceWaypoint };
+      });
       if (Math.abs(current.x - sideAisleX) > 1) route.push({ x: sideAisleX, y: current.y });
-      route.push({ x: sideAisleX, y: lowestRoadY });
+      if (Math.abs(current.y - lowestRoadY) > 1) route.push({ x: sideAisleX, y: lowestRoadY });
       current = { x: sideAisleX, y: lowestRoadY };
     } else if (from.x < sideAisleX) {
       route.push({ x: sideAisleX, y: current.y });
@@ -294,7 +375,7 @@ export class ShelfSystem {
   isRouteSwitchActive(routeSwitch) {
     return routeSwitch.blockingShelfIds.some((id) => {
       const shelf = this.getShelf(id);
-      return shelf && this.state.unlockedZones.includes(shelf.zone);
+      return this.isShelfActive(shelf);
     });
   }
 
@@ -315,16 +396,21 @@ export class ShelfSystem {
   }
 
   getLowestRoadY() {
-    return Math.max(...this.shelves.map((shelf) => shelf.customerSpot?.y ?? shelf.y + this.options.customerSpotY));
+    if (this.options.route.lowestRoadY != null) return this.options.route.lowestRoadY;
+    return Math.max(...this.shelves.map((shelf) => shelf.y + this.options.customerSpotY));
   }
 
   destroy() {
     EventBus.off(Events.UI_SHELF_SELECTED, this.onShelfSelected);
+    this.shelfIndicators.forEach((indicator) => {
+      indicator.objects.forEach((object) => object.destroy());
+    });
+    this.shelfIndicators.clear();
   }
 
   takeFromShelf(id, amount) {
     const shelf = this.shelves.find((item) => item.id === id);
-    if (!shelf) return null;
+    if (!this.isShelfActive(shelf)) return null;
     const current = this.state.shelves[id] ?? 0;
     const taken = Math.min(amount, current);
     this.state.shelves[id] = current - taken;
@@ -340,23 +426,22 @@ export class ShelfSystem {
   }
 
   getRandomStockedShelf() {
-    const candidates = this.shelves.filter((shelf) => this.state.unlockedZones.includes(shelf.zone) && this.state.shelves[shelf.id] > 0);
+    const candidates = this.shelves.filter((shelf) => this.isShelfReachable(shelf) && this.state.shelves[shelf.id] > 0);
     return Phaser.Utils.Array.GetRandom(candidates);
   }
 
   getNeedyShelf() {
-    return this.shelves.find((shelf) => this.state.unlockedZones.includes(shelf.zone) && (this.state.shelves[shelf.id] ?? 0) < shelf.capacity);
+    return this.shelves.find((shelf) => this.isShelfActive(shelf) && (this.state.shelves[shelf.id] ?? 0) < shelf.capacity);
   }
 
   getNearbyShelf(position, radius = 70) {
     return this.shelves.find((shelf) => {
-      const unlocked = this.state.unlockedZones.includes(shelf.zone);
-      return unlocked && Math.hypot(shelf.x - position.x, shelf.y - position.y) <= radius;
+      return this.isShelfActive(shelf) && Math.hypot(shelf.x - position.x, shelf.y - position.y) <= radius;
     });
   }
 
   hasAnyStock() {
-    return this.shelves.some((shelf) => this.state.unlockedZones.includes(shelf.zone) && (this.state.shelves[shelf.id] ?? 0) > 0);
+    return this.shelves.some((shelf) => this.isShelfActive(shelf) && (this.state.shelves[shelf.id] ?? 0) > 0);
   }
 
   checkAllStockEmpty() {

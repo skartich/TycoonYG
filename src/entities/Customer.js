@@ -28,6 +28,7 @@ export class Customer {
     this.basketValue = 0;
     this.basketItems = 0;
     this.targetItems = Phaser.Math.Between(1, 3);
+    this.routeRetries = 0;
     this.patience = 32;
     if (!this.checkoutCollider && systems.checkout.obstacles) {
       this.checkoutCollider = this.scene.physics.add.collider(this.container, systems.checkout.obstacles);
@@ -92,14 +93,22 @@ export class Customer {
   }
 
   goToShelf() {
-    if (!this.targetShelf) {
-      this.state = 'leaving';
+    if (!this.systems.shelves.isShelfReachable(this.targetShelf)) {
+      this.chooseShelf();
       return;
     }
 
     if (!this.shoppingRoute.length) {
       this.shoppingRoute = this.systems.shelves.getRouteToShelf(this.targetShelf, this.container);
       this.shoppingRouteIndex = 0;
+      if (!this.shoppingRoute.length) {
+        this.routeRetries += 1;
+        if (this.routeRetries <= 1) this.systems.refreshNavigation?.();
+        this.targetShelf = this.systems.shelves.getRandomStockedShelf();
+        this.state = this.targetShelf && this.routeRetries <= 2 ? 'walkingToShelf' : (this.basketItems > 0 ? 'walkingToCheckout' : 'leaving');
+        return;
+      }
+      this.routeRetries = 0;
     }
 
     const nextPoint = this.shoppingRoute[this.shoppingRouteIndex] ?? this.systems.shelves.getCustomerSpot(this.targetShelf);
@@ -130,14 +139,20 @@ export class Customer {
     }
 
     if (this.state !== 'walkingToShelf') return;
+    if (!this.systems.shelves.isShelfReachable(this.targetShelf)) {
+      this.chooseShelf();
+      return;
+    }
     this.shoppingRoute = this.systems.shelves.getRouteToShelf(this.targetShelf, this.container);
     this.shoppingRouteIndex = 0;
+    if (!this.shoppingRoute.length) this.chooseShelf();
   }
 
   chooseShelf() {
     this.targetShelf = this.systems.shelves.getRandomStockedShelf();
     this.shoppingRoute = [];
     this.shoppingRouteIndex = 0;
+    this.routeRetries = 0;
     this.state = this.targetShelf ? 'walkingToShelf' : (this.basketItems > 0 ? 'walkingToCheckout' : 'leaving');
   }
 

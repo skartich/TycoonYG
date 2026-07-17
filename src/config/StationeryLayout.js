@@ -29,7 +29,29 @@ const zoneRects = Object.fromEntries(
   ])),
 );
 
+const shelfContentCropTops = {
+  'stationery-notebooks-a': 38,
+  'stationery-notebooks-b': 38,
+  'stationery-writing-a': 40,
+  'stationery-writing-b': 39,
+  'stationery-markers-a': 42,
+  'stationery-markers-b': 40,
+  'stationery-paper-a': 41,
+  'stationery-paper-b': 43,
+  'stationery-folders-a': 45,
+  'stationery-folders-b': 43,
+  'stationery-school-a': 35,
+  'stationery-school-b': 40,
+  'stationery-art-a': 35,
+  'stationery-art-b': 36,
+  'stationery-desk-a': 35,
+  'stationery-desk-b': 45,
+  'stationery-envelopes-a': 35,
+  'stationery-envelopes-b': 40,
+};
+
 export const STATIONERY_LAYOUT = Object.freeze({
+  debugNavigation: false,
   canvas: { width: 1280, height: 720 },
   hud: { height: 92 },
   sidePanel: { x: 1008, width: 272, collapsedWidth: 44 },
@@ -46,6 +68,10 @@ export const STATIONERY_LAYOUT = Object.freeze({
     progressWidth: 76,
     progressHeight: 24,
     progressY: -54,
+    contentCropTops: shelfContentCropTops,
+    imageRepairs: {
+      'stationery-folders-b': { mirrorRightEdgeWidth: 11 },
+    },
     rows: SHELF_ROWS,
     columns: SHELF_COLUMNS,
     positions: shelfPositions,
@@ -93,8 +119,12 @@ export const STATIONERY_LAYOUT = Object.freeze({
     waitingStepY: -26,
     displayWidth: 82,
     displayHeight: 96,
+    textureCrop: { x: 0, y: 0, width: 128, height: 166 },
   },
-  entrance: { x: 600, y: 566, width: 250, height: 66 },
+  entrance: { x: 600, y: 566, width: 218, height: 88 },
+  entranceWaypoint: { x: 600, y: 566 },
+  entranceRoadWaypoint: { x: 600, y: 528 },
+  customerSpawn: { x: 600, y: 588 },
   playerSpawn: { x: 600, y: 495 },
   departmentSigns: [
     { x: 355, y: 42, text: 'Тетради' },

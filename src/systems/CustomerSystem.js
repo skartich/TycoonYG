@@ -9,10 +9,13 @@ export class CustomerSystem {
     this.balance = balance;
     this.systems = systems;
     this.spawnPoint = options.spawnPoint ?? ENTRANCE_POINT;
+    this.spawnEnabled = options.spawnEnabled ?? true;
+    this.autoRefreshRoutes = options.autoRefreshRoutes ?? true;
+    this.minSpawnDistance = options.minSpawnDistance ?? 28;
     this.spawnTimer = 1;
     this.pool = new ObjectPool(() => new Customer(scene));
     this.onRoutesChanged = () => this.refreshActiveRoutes();
-    EventBus.on(Events.ROUTES_CHANGED, this.onRoutesChanged);
+    if (this.autoRefreshRoutes) EventBus.on(Events.ROUTES_CHANGED, this.onRoutesChanged);
   }
 
   release(customer) {
@@ -20,10 +23,19 @@ export class CustomerSystem {
   }
 
   update(delta) {
+    if (!this.spawnEnabled) {
+      this.pool.used.forEach((customer) => customer.update(delta));
+      return;
+    }
     this.spawnTimer -= delta / 1000;
     if (this.spawnTimer <= 0) {
       this.spawnTimer = this.systems.boosts?.getCustomerSpawnSeconds() ?? this.balance.get('start.customerSpawnSeconds');
-      if (this.systems.shelves.getRandomStockedShelf()) this.pool.acquire(this.spawnPoint.x, this.spawnPoint.y, this.systems);
+      const spawnPosition = this.getAvailableSpawnPosition();
+      if (spawnPosition && this.systems.shelves.getRandomStockedShelf()) {
+        this.pool.acquire(spawnPosition.x, spawnPosition.y, this.systems);
+      } else if (!spawnPosition) {
+        this.spawnTimer = Math.min(this.spawnTimer, 0.5);
+      }
     }
     this.pool.used.forEach((customer) => customer.update(delta));
   }
@@ -32,7 +44,23 @@ export class CustomerSystem {
     this.pool.used.forEach((customer) => customer.refreshRoute?.());
   }
 
+  setSpawnEnabled(enabled) {
+    this.spawnEnabled = Boolean(enabled);
+    if (this.spawnEnabled) this.spawnTimer = Math.min(this.spawnTimer, 0.5);
+  }
+
+  getAvailableSpawnPosition() {
+    const offsets = [0, 38, -38, 76, -76];
+    return offsets
+      .map((offset) => ({ x: this.spawnPoint.x + offset, y: this.spawnPoint.y }))
+      .find((candidate) => [...this.pool.used].every((customer) => (
+        !customer.container.visible
+        || Math.hypot(customer.container.x - candidate.x, customer.container.y - candidate.y) >= this.minSpawnDistance
+      ))) ?? null;
+  }
+
   destroy() {
-    EventBus.off(Events.ROUTES_CHANGED, this.onRoutesChanged);
+    if (this.autoRefreshRoutes) EventBus.off(Events.ROUTES_CHANGED, this.onRoutesChanged);
+    this.pool.clear();
   }
 }

@@ -23,6 +23,7 @@ export class CheckoutSystem {
       imageKey: 'self-checkout',
       displayWidth: 96,
       displayHeight: 96,
+      textureCrop: null,
       terminalPositions: DEFAULT_TERMINAL_POSITIONS,
       terminalSpots: DEFAULT_TERMINAL_SPOTS,
       sideLaneX: 305,
@@ -31,6 +32,7 @@ export class CheckoutSystem {
       laneMinY: 362,
       laneMaxY: 760,
       entrancePoint: ENTRANCE_POINT,
+      exitRoute: null,
       ...options,
     };
     this.queue = [];
@@ -39,8 +41,9 @@ export class CheckoutSystem {
     this.terminalSpots = this.options.terminalSpots;
     this.sideLaneX = this.options.sideLaneX;
     this.visual = scene.add.container(0, 0).setDepth(15);
+    const terminalFrame = this.createTerminalFrame();
     this.checkoutSprites = this.terminalPositions.map((spot) => {
-      const terminal = scene.add.image(spot.x, spot.y, this.options.imageKey)
+      const terminal = scene.add.image(spot.x, spot.y, this.options.imageKey, terminalFrame)
         .setDisplaySize(this.options.displayWidth, this.options.displayHeight);
       return terminal;
     });
@@ -52,6 +55,17 @@ export class CheckoutSystem {
       blocker.body.setSize(72, 54);
       blocker.body.updateFromGameObject();
     });
+  }
+
+  createTerminalFrame() {
+    const crop = this.options.textureCrop;
+    if (!crop) return undefined;
+    const texture = this.scene.textures.get(this.options.imageKey);
+    const frameName = `checkout-${crop.x}-${crop.y}-${crop.width}-${crop.height}`;
+    if (!texture.frames[frameName]) {
+      texture.add(frameName, 0, crop.x, crop.y, crop.width, crop.height);
+    }
+    return frameName;
   }
 
   joinQueue(customer) {
@@ -88,12 +102,15 @@ export class CheckoutSystem {
   }
 
   getExitRoute(from) {
-    const entrance = this.options.entrancePoint;
-    const laneY = Phaser.Math.Clamp(from.y, this.options.laneMinY, entrance.y);
+    const configuredRoute = this.options.exitRoute?.length
+      ? this.options.exitRoute
+      : [this.options.entrancePoint];
+    const routeEntry = configuredRoute[0];
+    const laneY = Phaser.Math.Clamp(from.y, this.options.laneMinY, routeEntry.y);
     return [
       { x: this.sideLaneX, y: laneY },
-      { x: this.sideLaneX, y: entrance.y },
-      entrance,
+      { x: this.sideLaneX, y: routeEntry.y },
+      ...configuredRoute,
     ];
   }
 
