@@ -12,8 +12,9 @@ export class CustomerSystem {
     this.spawnEnabled = options.spawnEnabled ?? true;
     this.autoRefreshRoutes = options.autoRefreshRoutes ?? true;
     this.minSpawnDistance = options.minSpawnDistance ?? 28;
+    this.customerOptions = options.customer ?? {};
     this.spawnTimer = 1;
-    this.pool = new ObjectPool(() => new Customer(scene));
+    this.pool = new ObjectPool(() => new Customer(scene, this.customerOptions));
     this.onRoutesChanged = () => this.refreshActiveRoutes();
     if (this.autoRefreshRoutes) EventBus.on(Events.ROUTES_CHANGED, this.onRoutesChanged);
   }

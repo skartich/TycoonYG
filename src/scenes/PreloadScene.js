@@ -6,7 +6,6 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('self-checkout', '/assets/self-checkout.png');
     this.load.image('customer-front', '/assets/customer-front.png');
     this.load.image('customer-back', '/assets/customer-back.png');
     this.load.image('player-front', '/assets/player-front.png');
@@ -14,7 +13,31 @@ export class PreloadScene extends Phaser.Scene {
     this.load.spritesheet('player-idle', '/assets/player-idle.png', { frameWidth: 232, frameHeight: 276 });
     this.load.spritesheet('player-walk', '/assets/player-walk.png', { frameWidth: 232, frameHeight: 276 });
     this.load.image('top-panel', '/assets/top-panel.png');
-    this.load.image('entrance', '/assets/entrance.png');
+    [
+      'shelf-grocery',
+      'shelf-dairy',
+      'shelf-snacks',
+      'shelf-drinks',
+      'shelf-bakery',
+      'shelf-frozen',
+      'shelf-produce',
+      'shelf-canned',
+      'shelf-ready-food',
+      'self-checkout',
+      'entrance-mat',
+      'topiary',
+      'entrance-bollard',
+      'trash-bin',
+      'customer-robot',
+      'plant',
+      'floor-tile',
+      'aisle-horizontal',
+      'aisle-vertical',
+      'aisle-corner',
+      'aisle-t',
+    ].forEach((asset) => {
+      this.load.image(`grocery-${asset}`, `/assets/grocery/${asset}.png`);
+    });
     [
       'air-conditioner',
       'bollard-low',
@@ -45,10 +68,6 @@ export class PreloadScene extends Phaser.Scene {
       'shop-stationery',
       'street-lamp',
     ].forEach((asset) => this.load.image(`street-${asset}`, `/assets/street/${asset}.png`));
-    ['groceries', 'dairy', 'snacks', 'drinks', 'bakery', 'frozen'].forEach((product) => {
-      this.load.image(`shelf-${product}`, `/assets/shelf-${product}.png`);
-      this.load.image(`progress-${product}`, `/assets/progress-${product}.png`);
-    });
     this.load.image('stationery-checkout', '/assets/stationery/stationery-checkout.png');
     this.load.image('stationery-entrance', '/assets/stationery/stationery-entrance.png');
     [

@@ -23,6 +23,9 @@ export class CheckoutSystem {
       imageKey: 'self-checkout',
       displayWidth: 96,
       displayHeight: 96,
+      blockerWidth: 72,
+      blockerHeight: 54,
+      blockerY: 2,
       textureCrop: null,
       terminalPositions: DEFAULT_TERMINAL_POSITIONS,
       terminalSpots: DEFAULT_TERMINAL_SPOTS,
@@ -50,9 +53,16 @@ export class CheckoutSystem {
     this.visual.add(this.checkoutSprites);
     this.obstacles = scene.physics.add.staticGroup();
     this.terminalPositions.forEach((spot) => {
-      const blocker = scene.add.rectangle(spot.x, spot.y + 2, 72, 54, 0x000000, 0);
+      const blocker = scene.add.rectangle(
+        spot.x,
+        spot.y + this.options.blockerY,
+        this.options.blockerWidth,
+        this.options.blockerHeight,
+        0x000000,
+        0,
+      );
       this.obstacles.add(blocker);
-      blocker.body.setSize(72, 54);
+      blocker.body.setSize(this.options.blockerWidth, this.options.blockerHeight);
       blocker.body.updateFromGameObject();
     });
   }

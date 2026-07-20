@@ -4,14 +4,19 @@ import { EventBus, Events } from '../core/EventBus.js';
 const CUSTOMER_DEPTH_OFFSET = 22;
 
 export class Customer {
-  constructor(scene) {
+  constructor(scene, options = {}) {
     this.scene = scene;
+    this.frontTexture = options.frontTexture ?? 'customer-front';
+    this.backTexture = options.backTexture ?? 'customer-back';
     this.container = scene.add.container(-100, -100).setVisible(false).setDepth(40);
-    this.sprite = scene.add.image(0, 0, 'customer-front').setDisplaySize(56, 44);
+    this.sprite = scene.add.image(0, options.spriteY ?? 0, this.frontTexture)
+      .setDisplaySize(options.displayWidth ?? 56, options.displayHeight ?? 44);
     this.container.add(this.sprite);
     this.facing = 'front';
     scene.physics.add.existing(this.container);
-    this.container.body.setSize(30, 30).setOffset(-15, -15);
+    const bodyWidth = options.bodyWidth ?? 30;
+    const bodyHeight = options.bodyHeight ?? 30;
+    this.container.body.setSize(bodyWidth, bodyHeight).setOffset(-bodyWidth / 2, -bodyHeight / 2);
   }
 
   spawn(x, y, systems) {
@@ -85,7 +90,7 @@ export class Customer {
     const nextFacing = dy < 0 ? 'back' : 'front';
     if (nextFacing === this.facing) return;
     this.facing = nextFacing;
-    this.sprite.setTexture(nextFacing === 'back' ? 'customer-back' : 'customer-front');
+    this.sprite.setTexture(nextFacing === 'back' ? this.backTexture : this.frontTexture);
   }
 
   updateDepth() {

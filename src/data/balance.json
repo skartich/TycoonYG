@@ -19,12 +19,14 @@
     "boxSize": 12,
     "types": {
       "groceries": { "name": "Бакалея", "buyPrice": 3, "sellPrice": 9, "color": "0x55c933" },
-      "dairy": { "name": "Молоко", "buyPrice": 4, "sellPrice": 12, "color": "0x58aeea" },
+      "dairy": { "name": "Молочные", "buyPrice": 4, "sellPrice": 12, "color": "0x58aeea" },
       "snacks": { "name": "Снеки", "buyPrice": 8, "sellPrice": 24, "color": "0xff7924" },
       "drinks": { "name": "Напитки", "buyPrice": 13, "sellPrice": 39, "color": "0xffcd37" },
       "bakery": { "name": "Выпечка", "buyPrice": 19, "sellPrice": 57, "color": "0x82dff2" },
-      "frozen": { "name": "Заморозка", "buyPrice": 28, "sellPrice": 84, "color": "0xdbdbdb" }
-      ,
+      "frozen": { "name": "Замороженные", "buyPrice": 28, "sellPrice": 84, "color": "0xdbdbdb" },
+      "produce": { "name": "Овощи и фрукты", "shortName": "Овощи", "buyPrice": 22, "sellPrice": 66, "color": "0x7ac943" },
+      "canned": { "name": "Консервы и соусы", "shortName": "Консервы", "buyPrice": 25, "sellPrice": 75, "color": "0xd78645" },
+      "readyFood": { "name": "Готовая еда", "buyPrice": 30, "sellPrice": 90, "color": "0xe49a5d" },
       "notebooks": { "name": "\u0422\u0435\u0442\u0440\u0430\u0434\u0438", "shortName": "\u0422\u0435\u0442\u0440.", "buyPrice": 3, "sellPrice": 9, "color": "0x5bc94c" },
       "writing": { "name": "\u0420\u0443\u0447\u043a\u0438 \u0438 \u043a\u0430\u0440\u0430\u043d\u0434\u0430\u0448\u0438", "shortName": "\u0420\u0443\u0447\u043a\u0438", "buyPrice": 4, "sellPrice": 12, "color": "0x45aaf2" },
       "markers": { "name": "\u041c\u0430\u0440\u043a\u0435\u0440\u044b", "shortName": "\u041c\u0430\u0440\u043a.", "buyPrice": 6, "sellPrice": 18, "color": "0xf06595" },
@@ -37,18 +39,24 @@
     }
   },
   "shelves": [
-    { "id": "groceries-a", "product": "groceries", "x": 440, "y": 290, "capacity": 18, "zone": "starter" },
-    { "id": "groceries-b", "product": "groceries", "x": 610, "y": 290, "capacity": 18, "zone": "starter" },
-    { "id": "dairy-a", "product": "dairy", "x": 440, "y": 430, "capacity": 20, "zone": "dairy" },
-    { "id": "dairy-b", "product": "dairy", "x": 610, "y": 430, "capacity": 20, "zone": "dairy" },
-    { "id": "snacks-a", "product": "snacks", "x": 810, "y": 290, "capacity": 22, "zone": "snacks" },
-    { "id": "snacks-b", "product": "snacks", "x": 980, "y": 290, "capacity": 22, "zone": "snacks" },
-    { "id": "drinks-a", "product": "drinks", "x": 810, "y": 430, "capacity": 24, "zone": "drinks" },
-    { "id": "drinks-b", "product": "drinks", "x": 980, "y": 430, "capacity": 24, "zone": "drinks" },
-    { "id": "bakery-a", "product": "bakery", "x": 440, "y": 570, "capacity": 26, "zone": "bakery" },
-    { "id": "bakery-b", "product": "bakery", "x": 610, "y": 570, "capacity": 26, "zone": "bakery" },
-    { "id": "frozen-a", "product": "frozen", "x": 810, "y": 570, "capacity": 28, "zone": "frozen" },
-    { "id": "frozen-b", "product": "frozen", "x": 980, "y": 570, "capacity": 28, "zone": "frozen" }
+    { "id": "groceries-a", "product": "groceries", "asset": "grocery-shelf-grocery", "x": 270, "y": 90, "capacity": 20, "zone": "starter" },
+    { "id": "groceries-b", "product": "groceries", "asset": "grocery-shelf-grocery", "x": 395, "y": 90, "capacity": 20, "zone": "starter" },
+    { "id": "dairy-a", "product": "dairy", "asset": "grocery-shelf-dairy", "x": 525, "y": 90, "capacity": 20, "zone": "dairy" },
+    { "id": "dairy-b", "product": "dairy", "asset": "grocery-shelf-dairy", "x": 650, "y": 90, "capacity": 20, "zone": "dairy" },
+    { "id": "snacks-a", "product": "snacks", "asset": "grocery-shelf-snacks", "x": 780, "y": 90, "capacity": 20, "zone": "snacks" },
+    { "id": "snacks-b", "product": "snacks", "asset": "grocery-shelf-snacks", "x": 910, "y": 90, "capacity": 20, "zone": "snacks" },
+    { "id": "drinks-a", "product": "drinks", "asset": "grocery-shelf-drinks", "x": 270, "y": 255, "capacity": 24, "zone": "drinks" },
+    { "id": "drinks-b", "product": "drinks", "asset": "grocery-shelf-drinks", "x": 395, "y": 255, "capacity": 24, "zone": "drinks" },
+    { "id": "bakery-a", "product": "bakery", "asset": "grocery-shelf-bakery", "x": 525, "y": 255, "capacity": 24, "zone": "bakery" },
+    { "id": "bakery-b", "product": "bakery", "asset": "grocery-shelf-bakery", "x": 650, "y": 255, "capacity": 24, "zone": "bakery" },
+    { "id": "frozen-a", "product": "frozen", "asset": "grocery-shelf-frozen", "x": 780, "y": 255, "capacity": 20, "zone": "frozen" },
+    { "id": "frozen-b", "product": "frozen", "asset": "grocery-shelf-frozen", "x": 910, "y": 255, "capacity": 20, "zone": "frozen" },
+    { "id": "produce-a", "product": "produce", "asset": "grocery-shelf-produce", "x": 270, "y": 420, "capacity": 22, "zone": "produce" },
+    { "id": "produce-b", "product": "produce", "asset": "grocery-shelf-produce", "x": 395, "y": 420, "capacity": 22, "zone": "produce" },
+    { "id": "canned-a", "product": "canned", "asset": "grocery-shelf-canned", "x": 525, "y": 420, "capacity": 22, "zone": "canned" },
+    { "id": "canned-b", "product": "canned", "asset": "grocery-shelf-canned", "x": 650, "y": 420, "capacity": 22, "zone": "canned" },
+    { "id": "ready-food-a", "product": "readyFood", "asset": "grocery-shelf-ready-food", "x": 780, "y": 420, "capacity": 24, "zone": "ready-food" },
+    { "id": "ready-food-b", "product": "readyFood", "asset": "grocery-shelf-ready-food", "x": 910, "y": 420, "capacity": 24, "zone": "ready-food" }
   ],
   "stationeryShelves": [
     { "id": "stationery-notebooks-a", "product": "notebooks", "asset": "stationery-notebooks-a", "x": 430, "y": 240, "capacity": 18, "zone": "stationery-starter" },
@@ -82,12 +90,15 @@
     { "id": "stationery-envelopes", "name": "\u041a\u043e\u043d\u0432\u0435\u0440\u0442\u044b \u0438 \u0443\u043f\u0430\u043a\u043e\u0432\u043a\u0430", "cost": 3800, "rect": { "x": 915, "y": 480, "w": 250, "h": 140 } }
   ],
   "zones": [
-    { "id": "starter", "name": "Бакалея", "cost": 0, "rect": { "x": 330, "y": 220, "w": 370, "h": 130 } },
-    { "id": "dairy", "name": "Молочный ряд", "cost": 380, "rect": { "x": 330, "y": 360, "w": 370, "h": 130 } },
-    { "id": "snacks", "name": "Снеки", "cost": 760, "rect": { "x": 700, "y": 220, "w": 370, "h": 130 } },
-    { "id": "drinks", "name": "Напитки", "cost": 1250, "rect": { "x": 700, "y": 360, "w": 370, "h": 130 } },
-    { "id": "bakery", "name": "Пекарня", "cost": 1900, "rect": { "x": 330, "y": 500, "w": 370, "h": 130 } },
-    { "id": "frozen", "name": "Заморозка", "cost": 2800, "rect": { "x": 700, "y": 500, "w": 370, "h": 130 } }
+    { "id": "starter", "name": "Бакалея", "cost": 0, "rect": { "x": 210, "y": 22, "w": 245, "h": 140 } },
+    { "id": "dairy", "name": "Молочные", "cost": 380, "rect": { "x": 465, "y": 22, "w": 245, "h": 140 } },
+    { "id": "snacks", "name": "Снеки", "cost": 760, "rect": { "x": 720, "y": 22, "w": 245, "h": 140 } },
+    { "id": "drinks", "name": "Напитки", "cost": 1250, "rect": { "x": 210, "y": 187, "w": 245, "h": 140 } },
+    { "id": "bakery", "name": "Выпечка", "cost": 1900, "rect": { "x": 465, "y": 187, "w": 245, "h": 140 } },
+    { "id": "frozen", "name": "Замороженные", "cost": 2800, "rect": { "x": 720, "y": 187, "w": 245, "h": 140 } },
+    { "id": "produce", "name": "Овощи и фрукты", "cost": 3600, "rect": { "x": 210, "y": 352, "w": 245, "h": 140 } },
+    { "id": "canned", "name": "Консервы и соусы", "cost": 4400, "rect": { "x": 465, "y": 352, "w": 245, "h": 140 } },
+    { "id": "ready-food", "name": "Готовая еда", "cost": 5300, "rect": { "x": 720, "y": 352, "w": 245, "h": 140 } }
   ],
   "upgrades": [
     { "id": "speed-1", "name": "Быстрые кроссовки", "cost": 180, "type": "playerSpeed", "value": 35 },

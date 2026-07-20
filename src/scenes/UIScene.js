@@ -19,6 +19,7 @@ export class UIScene extends Phaser.Scene {
       panelWidth: data.ui?.panelWidth ?? 272,
       theme: data.ui?.theme ?? 'default',
       collapsible: data.ui?.collapsible ?? true,
+      groupedShelves: data.ui?.groupedShelves ?? false,
     };
     this.shelfButtons = new Map();
     this.boostButtons = new Map();
@@ -47,7 +48,7 @@ export class UIScene extends Phaser.Scene {
       .setDisplaySize(500, 84)
       .setScrollFactor(0)
       .setDepth(3000);
-    if (this.uiOptions.theme === 'stationery') {
+    if (['stationery', 'grocery'].includes(this.uiOptions.theme)) {
       this.add.rectangle(258, 86, 452, 3, 0x55c7ee, 0.85).setScrollFactor(0).setDepth(3001);
     }
 
@@ -104,25 +105,11 @@ export class UIScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.panelContent.add([backdrop, accent, title]);
 
-    const columns = 2;
-    const buttonWidth = 120;
-    const buttonHeight = 30;
-    const rowGap = 34;
     const startY = 140;
-    this.shelves.forEach((shelf, index) => {
-      const x = 70 + (index % columns) * 132;
-      const y = startY + Math.floor(index / columns) * rowGap;
-      const button = new Button(this, x, y, buttonWidth, buttonHeight, '', () => this.selectAndRestock(shelf.id), {
-        baseColor: 0xf3cf62,
-        hoverColor: 0xffdf7f,
-        selectedColor: 0x8bd5ee,
-      });
-      this.panelContent.add(button.container);
-      this.shelfButtons.set(shelf.id, button);
-    });
-
-    const shelfRows = Math.ceil(this.shelves.length / columns);
-    const boostsTop = Math.max(420, startY + shelfRows * rowGap + 8);
+    const shelfLayout = this.uiOptions.groupedShelves
+      ? this.createGroupedShelfButtons(startY)
+      : this.createStandardShelfButtons(startY);
+    const boostsTop = Math.max(420, startY + shelfLayout.rows * shelfLayout.rowGap + 8);
     const divider = this.add.rectangle(panelWidth / 2, boostsTop - 18, panelWidth - 28, 2, 0x4f655a, 0.8);
     const boostsTitle = this.add.text(panelWidth / 2, boostsTop, 'Бусты', {
       fontSize: '19px', color: '#f7d05b', fontStyle: 'bold',
@@ -148,6 +135,57 @@ export class UIScene extends Phaser.Scene {
     toggleBg.setInteractive({ useHandCursor: true });
     toggleBg.on('pointerdown', () => this.setPanelOpen(!this.panelOpen));
     this.panelToggle.add([toggleBg, this.panelToggleText]);
+  }
+
+  createStandardShelfButtons(startY) {
+    const columns = 2;
+    const rowGap = 34;
+    this.shelves.forEach((shelf, index) => {
+      const x = 70 + (index % columns) * 132;
+      const y = startY + Math.floor(index / columns) * rowGap;
+      this.createShelfButton(shelf, x, y, 120, 30);
+    });
+    return { rows: Math.ceil(this.shelves.length / columns), rowGap };
+  }
+
+  createGroupedShelfButtons(startY) {
+    const rowGap = 37;
+    const groups = [];
+    this.shelves.forEach((shelf) => {
+      let group = groups.find((item) => item.product === shelf.product);
+      if (!group) {
+        group = { product: shelf.product, shelves: [] };
+        groups.push(group);
+      }
+      group.shelves.push(shelf);
+    });
+
+    groups.forEach((group, index) => {
+      const y = startY + index * rowGap;
+      const category = group.shelves[0].productMeta.name;
+      const categoryBg = this.add.rectangle(57, y, 106, 33, 0xf3cf62, 1).setStrokeStyle(2, 0x2a332d);
+      const categoryText = this.add.text(57, y, category, {
+        fontSize: '11px',
+        color: '#18251f',
+        align: 'center',
+        wordWrap: { width: 96 },
+      }).setOrigin(0.5);
+      this.panelContent.add([categoryBg, categoryText]);
+      group.shelves.forEach((shelf, shelfIndex) => {
+        this.createShelfButton(shelf, 155 + shelfIndex * 73, y, 68, 33);
+      });
+    });
+    return { rows: groups.length, rowGap };
+  }
+
+  createShelfButton(shelf, x, y, width, height) {
+    const button = new Button(this, x, y, width, height, '', () => this.selectAndRestock(shelf.id), {
+      baseColor: 0xf3cf62,
+      hoverColor: 0xffdf7f,
+      selectedColor: 0x8bd5ee,
+    });
+    this.panelContent.add(button.container);
+    this.shelfButtons.set(shelf.id, button);
   }
 
   selectAndRestock(id) {
@@ -214,13 +252,17 @@ export class UIScene extends Phaser.Scene {
       const shelfMark = shelf.id.endsWith('-a') ? 'A' : 'B';
       const productName = shelf.productMeta.shortName ?? shelf.productMeta.name;
       if (!unlocked) {
-        button.setText(`${productName} ${shelfMark}\nОткрыть $${zone.cost}`);
+        button.setText(this.uiOptions.groupedShelves
+          ? `${shelfMark}\n$${zone.cost}`
+          : `${productName} ${shelfMark}\nОткрыть $${zone.cost}`);
         return;
       }
       const missing = Math.max(0, shelf.capacity - current);
       const maxCost = missing * shelf.productMeta.buyPrice;
       const status = missing > 0 ? `${current}/${shelf.capacity}  $${maxCost}` : `${current}/${shelf.capacity}  max`;
-      button.setText(`${productName} ${shelfMark}  $${shelf.productMeta.buyPrice}\n${status}`);
+      button.setText(this.uiOptions.groupedShelves
+        ? `${shelfMark}  $${shelf.productMeta.buyPrice}\n${status}`
+        : `${productName} ${shelfMark}  $${shelf.productMeta.buyPrice}\n${status}`);
       button.setSelected(shelf.id === this.selectedShelfId);
     });
   }
