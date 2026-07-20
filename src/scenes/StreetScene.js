@@ -41,19 +41,17 @@ export class StreetScene extends Phaser.Scene {
   drawStreet() {
     const roadShadow = this.add.graphics().setDepth(-2);
     roadShadow.fillStyle(0x8f7f61, 0.16);
-    roadShadow.fillRoundedRect(48, 336, 1264, 176, 78);
+    roadShadow.fillRect(90, 336, 1180, 176);
     const roadBase = this.add.graphics().setDepth(-1);
     roadBase.fillStyle(0xe9ddc8, 1);
-    roadBase.fillRoundedRect(42, 324, 1276, 174, 78);
+    roadBase.fillRect(90, 324, 1180, 174);
     roadBase.lineStyle(8, 0xf3e8d4, 1);
-    roadBase.strokeRoundedRect(46, 328, 1268, 166, 74);
+    roadBase.strokeRect(94, 328, 1172, 166);
     roadBase.lineStyle(3, 0xa79d86, 0.35);
-    roadBase.strokeRoundedRect(50, 332, 1260, 158, 70);
+    roadBase.strokeRect(98, 332, 1164, 158);
 
     this.add.tileSprite(680, 410, 1120, 138, 'street-pavement-tile').setTint(0xf3ead9).setDepth(-0.5);
     this.add.image(680, 410, 'street-pavement-straight').setDisplaySize(1180, 178).setTint(0xf1eadc).setDepth(0);
-    this.add.image(76, 407, 'street-deadend-left').setDisplaySize(130, 158).setTint(0xf1eadc).setDepth(1);
-    this.add.image(1284, 407, 'street-deadend-right').setDisplaySize(130, 158).setTint(0xf1eadc).setDepth(1);
 
     this.add.image(312, 187, 'street-shop-grocery').setDisplaySize(244, 262).setDepth(160);
     this.add.image(598, 187, 'street-shop-stationery').setDisplaySize(235, 267).setDepth(160);
@@ -101,10 +99,6 @@ export class StreetScene extends Phaser.Scene {
     this.addCollider(1332, 405, 36, 360);
     this.addCollider(680, 126, 1270, 36);
     this.addCollider(680, 704, 1270, 36);
-    this.addCollider(72, 288, 84, 26);
-    this.addCollider(1288, 288, 84, 26);
-    this.addCollider(72, 526, 84, 28);
-    this.addCollider(1288, 526, 84, 28);
   }
 
   addCollider(x, y, width, height) {
@@ -120,7 +114,7 @@ export class StreetScene extends Phaser.Scene {
     this.saveManager = this.registry.get('saveManager');
     this.state = this.saveManager.load();
     this.economy = new EconomySystem(this.state, this.balance);
-    const start = data.from === 'GameplayScene' ? { x: 680, y: 505 } : { x: 680, y: 505 };
+    const start = data.from === 'HypermarketScene' ? { x: 973, y: 392 } : { x: 680, y: 505 };
 
     this.player = new Player(this, start.x, start.y, this.economy.stats);
     this.physics.add.collider(this.player.sprite, this.obstacles);

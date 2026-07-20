@@ -38,6 +38,8 @@ export class ShelfSystem {
       preserveShelfAspect: false,
       shelfImageY: 0,
       shelfImageHeight: null,
+      showLockedPreviews: false,
+      lockedPreviewAlpha: 0.3,
       positions: null,
       blockerWidth: DEFAULT_SHELF_BLOCKER_WIDTH,
       blockerHeight: DEFAULT_SHELF_BLOCKER_HEIGHT,
@@ -74,6 +76,7 @@ export class ShelfSystem {
       ...(this.options.positions?.[config.id] ?? {}),
       productMeta: balance.get(`${this.options.productsPath}.${config.product}`),
       visual: null,
+      preview: null,
       blocker: null,
       customerSpot: null,
       progressFill: null,
@@ -89,11 +92,26 @@ export class ShelfSystem {
 
   createVisuals() {
     this.obstacles = this.scene.physics.add.staticGroup();
-    this.shelves.filter((shelf) => this.isShelfPurchased(shelf)).forEach((shelf) => this.activateShelf(shelf));
+    this.shelves.forEach((shelf) => {
+      if (this.isShelfPurchased(shelf)) this.activateShelf(shelf);
+      else if (this.options.showLockedPreviews) this.createLockedPreview(shelf);
+    });
+  }
+
+  createLockedPreview(shelf) {
+    if (!shelf || shelf.preview) return shelf?.preview ?? null;
+    const shelfKey = shelf.asset ?? `shelf-${shelf.product}`;
+    shelf.preview = this.scene.add.container(shelf.x, shelf.y)
+      .add(this.createShelfImage(shelfKey))
+      .setAlpha(this.options.lockedPreviewAlpha)
+      .setDepth(shelf.y + this.options.shelfHeight / 2 - 1);
+    return shelf.preview;
   }
 
   activateShelf(shelf) {
     if (!shelf || shelf.visual) return shelf?.visual ?? null;
+    shelf.preview?.destroy(true);
+    shelf.preview = null;
     const visual = this.scene.add.container(shelf.x, shelf.y)
       .setDepth(shelf.y + this.options.shelfHeight / 2);
     const shelfKey = shelf.asset ?? `shelf-${shelf.product}`;

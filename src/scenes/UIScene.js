@@ -20,6 +20,7 @@ export class UIScene extends Phaser.Scene {
       theme: data.ui?.theme ?? 'default',
       collapsible: data.ui?.collapsible ?? true,
       groupedShelves: data.ui?.groupedShelves ?? false,
+      scrollableShelves: data.ui?.scrollableShelves ?? false,
     };
     this.shelfButtons = new Map();
     this.boostButtons = new Map();
@@ -39,6 +40,7 @@ export class UIScene extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off('resize', this.reflowUILayout, this);
+      if (this.onPanelWheel) this.input.off('wheel', this.onPanelWheel);
       this.eventHandlers?.forEach(([event, handler]) => EventBus.off(event, handler));
     });
   }
@@ -48,7 +50,7 @@ export class UIScene extends Phaser.Scene {
       .setDisplaySize(500, 84)
       .setScrollFactor(0)
       .setDepth(3000);
-    if (['stationery', 'grocery'].includes(this.uiOptions.theme)) {
+    if (['stationery', 'grocery', 'hypermarket'].includes(this.uiOptions.theme)) {
       this.add.rectangle(258, 86, 452, 3, 0x55c7ee, 0.85).setScrollFactor(0).setDepth(3001);
     }
 
@@ -106,10 +108,14 @@ export class UIScene extends Phaser.Scene {
     this.panelContent.add([backdrop, accent, title]);
 
     const startY = 140;
+    if (this.uiOptions.scrollableShelves) this.createShelfScrollArea(panelX, panelWidth, startY);
     const shelfLayout = this.uiOptions.groupedShelves
       ? this.createGroupedShelfButtons(startY)
       : this.createStandardShelfButtons(startY);
-    const boostsTop = Math.max(420, startY + shelfLayout.rows * shelfLayout.rowGap + 8);
+    if (this.uiOptions.scrollableShelves) this.finishShelfScrollArea(startY, shelfLayout);
+    const boostsTop = this.uiOptions.scrollableShelves
+      ? 520
+      : Math.max(420, startY + shelfLayout.rows * shelfLayout.rowGap + 8);
     const divider = this.add.rectangle(panelWidth / 2, boostsTop - 18, panelWidth - 28, 2, 0x4f655a, 0.8);
     const boostsTitle = this.add.text(panelWidth / 2, boostsTop, 'Бусты', {
       fontSize: '19px', color: '#f7d05b', fontStyle: 'bold',
@@ -135,6 +141,58 @@ export class UIScene extends Phaser.Scene {
     toggleBg.setInteractive({ useHandCursor: true });
     toggleBg.on('pointerdown', () => this.setPanelOpen(!this.panelOpen));
     this.panelToggle.add([toggleBg, this.panelToggleText]);
+  }
+
+  createShelfScrollArea(panelX, panelWidth, startY) {
+    this.shelfScrollTop = startY - 18;
+    this.shelfScrollBottom = 482;
+    this.shelfScroll = 0;
+    this.shelfScrollContent = this.add.container(0, 0);
+    this.panelContent.add(this.shelfScrollContent);
+
+    const maskShape = this.add.rectangle(
+      panelX + panelWidth / 2,
+      (this.shelfScrollTop + this.shelfScrollBottom) / 2,
+      panelWidth - 18,
+      this.shelfScrollBottom - this.shelfScrollTop,
+      0xffffff,
+      0,
+    ).setVisible(false);
+    this.shelfScrollMaskShape = maskShape;
+    this.shelfScrollContent.setMask(maskShape.createGeometryMask());
+
+    this.scrollTrack = this.add.rectangle(panelWidth - 9, 302, 4, 342, 0x70847a, 0.55);
+    this.scrollThumb = this.add.rectangle(panelWidth - 9, this.shelfScrollTop + 28, 6, 56, 0x8bd5ee, 0.9);
+    this.panelContent.add([this.scrollTrack, this.scrollThumb]);
+    this.onPanelWheel = (pointer, _objects, _deltaX, deltaY) => {
+      if (!this.panelOpen || pointer.x < panelX || pointer.x > panelX + panelWidth) return;
+      if (pointer.y < this.shelfScrollTop || pointer.y > this.shelfScrollBottom) return;
+      this.setShelfScroll(this.shelfScroll + deltaY * 0.7);
+    };
+    this.input.on('wheel', this.onPanelWheel);
+  }
+
+  finishShelfScrollArea(startY, shelfLayout) {
+    const contentBottom = startY + (shelfLayout.rows - 1) * shelfLayout.rowGap + 22;
+    this.maxShelfScroll = Math.max(0, contentBottom - this.shelfScrollBottom + 8);
+    const viewportHeight = this.shelfScrollBottom - this.shelfScrollTop;
+    const contentHeight = Math.max(viewportHeight, contentBottom - this.shelfScrollTop);
+    this.scrollThumbHeight = Math.max(42, viewportHeight * viewportHeight / contentHeight);
+    this.scrollThumb.setSize(6, this.scrollThumbHeight).setDisplaySize(6, this.scrollThumbHeight);
+    this.setShelfScroll(0);
+  }
+
+  setShelfScroll(value) {
+    this.shelfScroll = Phaser.Math.Clamp(value, 0, this.maxShelfScroll ?? 0);
+    this.shelfScrollContent?.setY(-this.shelfScroll);
+    if (!this.scrollThumb) return;
+    const travel = this.shelfScrollBottom - this.shelfScrollTop - this.scrollThumbHeight;
+    const ratio = this.maxShelfScroll > 0 ? this.shelfScroll / this.maxShelfScroll : 0;
+    this.scrollThumb.setY(this.shelfScrollTop + this.scrollThumbHeight / 2 + travel * ratio);
+  }
+
+  addShelfListObjects(objects) {
+    (this.shelfScrollContent ?? this.panelContent).add(objects);
   }
 
   createStandardShelfButtons(startY) {
@@ -170,7 +228,7 @@ export class UIScene extends Phaser.Scene {
         align: 'center',
         wordWrap: { width: 96 },
       }).setOrigin(0.5);
-      this.panelContent.add([categoryBg, categoryText]);
+      this.addShelfListObjects([categoryBg, categoryText]);
       group.shelves.forEach((shelf, shelfIndex) => {
         this.createShelfButton(shelf, 155 + shelfIndex * 73, y, 68, 33);
       });
@@ -184,11 +242,15 @@ export class UIScene extends Phaser.Scene {
       hoverColor: 0xffdf7f,
       selectedColor: 0x8bd5ee,
     });
-    this.panelContent.add(button.container);
+    this.addShelfListObjects(button.container);
     this.shelfButtons.set(shelf.id, button);
   }
 
   selectAndRestock(id) {
+    if (this.uiOptions.scrollableShelves) {
+      const buttonY = this.shelfButtons.get(id)?.container.y - this.shelfScroll;
+      if (buttonY < this.shelfScrollTop + 12 || buttonY > this.shelfScrollBottom - 12) return;
+    }
     this.selectedShelfId = id;
     this.shelfButtons.forEach((button, shelfId) => button.setSelected(shelfId === id));
     EventBus.emit(Events.UI_SHELF_SELECTED, id);

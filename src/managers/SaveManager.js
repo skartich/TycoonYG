@@ -13,6 +13,7 @@ export class SaveManager {
     const shelves = [
       ...this.balance.get('shelves'),
       ...this.balance.get('stationeryShelves', []),
+      ...this.balance.get('hypermarketShelves', []),
     ];
     return {
       money: this.balance.get('start.money'),

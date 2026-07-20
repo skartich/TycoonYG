@@ -50,12 +50,11 @@ export const GROCERY_LAYOUT = Object.freeze({
   aisles: {
     sideX: 185,
     rowYs: [158, 323, 488],
-    endX: 955,
-    connectorXs: [185, 590, 955],
+    endX: 930,
+    connectorXs: [185, 590],
     columns: [
       { maxX: 455, connectorX: 185 },
-      { maxX: 715, connectorX: 590 },
-      { connectorX: 955 },
+      { connectorX: 590 },
     ],
     roadWidth: 22,
   },

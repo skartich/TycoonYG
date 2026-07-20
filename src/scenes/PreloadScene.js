@@ -39,14 +39,50 @@ export class PreloadScene extends Phaser.Scene {
       this.load.image(`grocery-${asset}`, `/assets/grocery/${asset}.png`);
     });
     [
+      'groceries',
+      'dairy',
+      'snacks',
+      'drinks',
+      'bakery',
+      'frozen',
+      'produce',
+      'canned',
+      'ready-food',
+      'meat',
+      'seafood',
+      'household',
+      'hygiene',
+      'pets',
+      'kitchen',
+      'textile',
+      'toys',
+      'electronics',
+    ].forEach((asset) => {
+      this.load.image(`hypermarket-shelf-${asset}`, `/assets/hypermarket/shelves/shelf-${asset}.png`);
+    });
+    [
+      'checkout',
+      'entrance-bollard',
+      'entrance',
+      'floor-tile',
+      'plant',
+      'promo-drinks',
+      'promo-electronics',
+      'promo-household',
+      'promo-snacks',
+      'queue-rope',
+      'topiary',
+      'trash-bin',
+    ].forEach((asset) => {
+      this.load.image(`hypermarket-${asset}`, `/assets/hypermarket/props/${asset}.png`);
+    });
+    [
       'air-conditioner',
       'bollard-low',
       'bollard-tall',
       'bush-clump',
       'curb-corner',
       'curb-straight',
-      'deadend-left',
-      'deadend-right',
       'decor-tile',
       'drain-tile',
       'fern-bush',
